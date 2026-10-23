@@ -31,16 +31,27 @@ jobs:
 
       - name: Build frontend
         run: pnpm build
-      - name: Build frontend
-        run: pnpm build
 
       - name: Create placeholder resources
         run: |
-          mkdir -p src-tauri/resources
-          touch src-tauri/resources/GoldMapperLib.dll
+          node - <<'EOF'
+          const fs = require('fs');
+          const path = require('path');
+          const conf = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8'));
+          let res = (conf.bundle && conf.bundle.resources) || [];
+          if (!Array.isArray(res)) res = Object.keys(res);
+          for (const p of res) {
+            if (p.includes('*')) continue;
+            const f = path.join('src-tauri', p);
+            if (!fs.existsSync(f)) {
+              fs.mkdirSync(path.dirname(f), { recursive: true });
+              fs.writeFileSync(f, '');
+              console.log('placeholder:', f);
+            }
+          }
+          EOF
 
-      - name: Check Rust backend for iOS
-        run: cargo check --manifest-path src-tauri/Cargo.toml --target aarch64-apple-ios
+     
 
       - name: Check Rust backend for iOS
         run: cargo check --manifest-path src-tauri/Cargo.toml --target aarch64-apple-ios
