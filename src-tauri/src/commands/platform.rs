@@ -29,12 +29,8 @@ pub fn get_platform() -> PlatformInfo {
     {
         PlatformInfo { is_linux: false, is_mac: false, is_windows: false, is_android: true, arch }
     }
-}    #[cfg(target_os = "ios")]
-    {
-        PlatformInfo { is_linux: false, is_mac: false, is_windows: false, is_android: false, arch }
-    }
-} 
     #[cfg(target_os = "ios")]
     {
         PlatformInfo { is_linux: false, is_mac: false, is_windows: false, is_android: false, arch }
     }
+}
