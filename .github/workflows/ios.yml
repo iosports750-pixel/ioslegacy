@@ -1,0 +1,55 @@
+name: iOS build (experimental)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        run: pnpm build
+
+      - name: Check Rust backend for iOS
+        run: cargo check --manifest-path src-tauri/Cargo.toml --target aarch64-apple-ios
+
+      - name: Init iOS project
+        run: pnpm tauri ios init --ci
+
+      - name: Build iOS app (unsigned)
+        continue-on-error: true
+        run: pnpm tauri ios build --ci --export-method debugging
+        env:
+          CODE_SIGNING_ALLOWED: "NO"
+          CODE_SIGNING_REQUIRED: "NO"
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: |
+            src-tauri/gen/apple/build/**/*.ipa
+            src-tauri/gen/apple/build/**/*.xcarchive
+          if-no-files-found: warn
