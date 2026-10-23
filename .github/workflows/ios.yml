@@ -31,6 +31,16 @@ jobs:
 
       - name: Build frontend
         run: pnpm build
+      - name: Build frontend
+        run: pnpm build
+
+      - name: Create placeholder resources
+        run: |
+          mkdir -p src-tauri/resources
+          touch src-tauri/resources/GoldMapperLib.dll
+
+      - name: Check Rust backend for iOS
+        run: cargo check --manifest-path src-tauri/Cargo.toml --target aarch64-apple-ios
 
       - name: Check Rust backend for iOS
         run: cargo check --manifest-path src-tauri/Cargo.toml --target aarch64-apple-ios
