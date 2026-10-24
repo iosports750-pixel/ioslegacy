@@ -51,26 +51,34 @@ jobs:
           }
           EOF
 
-     
-
-      - name: Check Rust backend for iOS
-        run: cargo check --manifest-path src-tauri/Cargo.toml --target aarch64-apple-ios
-
       - name: Init iOS project
         run: pnpm tauri ios init --ci
 
       - name: Build iOS app (unsigned)
         continue-on-error: true
-        run: pnpm tauri ios build --ci --export-method debugging
-        env:
-          CODE_SIGNING_ALLOWED: "NO"
-          CODE_SIGNING_REQUIRED: "NO"
+        run: |
+          cat > "$RUNNER_TEMP/nosign.xcconfig" <<'EOF'
+          CODE_SIGNING_ALLOWED = NO
+          CODE_SIGNING_REQUIRED = NO
+          CODE_SIGN_IDENTITY =
+          DEVELOPMENT_TEAM =
+          EOF
+          export XCODE_XCCONFIG_FILE="$RUNNER_TEMP/nosign.xcconfig"
+          pnpm tauri ios build --ci --export-method debugging
+
+      - name: Package IPA
+        run: |
+          APP=$(find ~/Library/Developer/Xcode/DerivedData -type d -name "*.app" -path "*iphoneos*" | head -n 1)
+          echo "App: $APP"
+          mkdir -p out/Payload
+          cp -R "$APP" out/Payload/
+          (cd out && zip -qr ../app-unsigned.ipa Payload)
 
       - name: Upload results
         uses: actions/upload-artifact@v4
         with:
           name: ios-build
           path: |
+            app-unsigned.ipa
             src-tauri/gen/apple/build/**/*.ipa
-            src-tauri/gen/apple/build/**/*.xcarchive
           if-no-files-found: warn
